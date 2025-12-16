@@ -5,6 +5,7 @@
  */
 
 // Export config
+export * from './config/cloudSettingsService.js';
 export * from './config/config.js';
 export * from './config/defaultModelConfigs.js';
 export * from './config/models.js';
@@ -42,6 +43,7 @@ export * from './fallback/types.js';
 
 export * from './code_assist/codeAssist.js';
 export * from './code_assist/oauth2.js';
+export { authEvents } from './code_assist/oauth2.js';
 export * from './code_assist/server.js';
 export * from './code_assist/types.js';
 export * from './core/apiKeyCredentialStorage.js';

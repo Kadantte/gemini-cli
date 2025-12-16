@@ -10,8 +10,12 @@ import { CodeAssistServer } from '../code_assist/server.js';
 import type { OAuth2Client } from 'google-auth-library';
 import type { GeminiUserTier } from './types.js';
 import { UserTierId } from './types.js';
+import { CloudSettingsService } from '../config/cloudSettingsService.js';
+import type { Config } from '../config/config.js';
+import { AuthType } from '../core/contentGenerator.js';
 
 vi.mock('../code_assist/server.js');
+vi.mock('../config/cloudSettingsService.js');
 
 const mockPaidTier: GeminiUserTier = {
   id: UserTierId.STANDARD,
@@ -27,9 +31,13 @@ const mockFreeTier: GeminiUserTier = {
   isDefault: true,
 };
 
+const mockConfig = {} as Config;
+const mockAuthType = AuthType.LOGIN_WITH_GOOGLE;
+
 describe('setupUser for existing user', () => {
   let mockLoad: ReturnType<typeof vi.fn>;
   let mockOnboardUser: ReturnType<typeof vi.fn>;
+  let mockLoadSettings: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -49,6 +57,11 @@ describe('setupUser for existing user', () => {
           onboardUser: mockOnboardUser,
         }) as unknown as CodeAssistServer,
     );
+
+    mockLoadSettings = vi.fn().mockResolvedValue(null);
+    vi.mocked(CloudSettingsService.getInstance).mockReturnValue({
+      loadSettings: mockLoadSettings,
+    } as unknown as CloudSettingsService);
   });
 
   afterEach(() => {
@@ -60,7 +73,7 @@ describe('setupUser for existing user', () => {
     mockLoad.mockResolvedValue({
       currentTier: mockPaidTier,
     });
-    await setupUser({} as OAuth2Client);
+    await setupUser({} as OAuth2Client, mockConfig, mockAuthType);
     expect(CodeAssistServer).toHaveBeenCalledWith(
       {},
       'test-project',
@@ -68,6 +81,7 @@ describe('setupUser for existing user', () => {
       '',
       undefined,
     );
+    expect(mockLoadSettings).toHaveBeenCalledWith(mockConfig, mockAuthType);
   });
 
   it('should ignore GOOGLE_CLOUD_PROJECT when project from server is set', async () => {
@@ -76,7 +90,11 @@ describe('setupUser for existing user', () => {
       cloudaicompanionProject: 'server-project',
       currentTier: mockPaidTier,
     });
-    const projectId = await setupUser({} as OAuth2Client);
+    const projectId = await setupUser(
+      {} as OAuth2Client,
+      mockConfig,
+      mockAuthType,
+    );
     expect(CodeAssistServer).toHaveBeenCalledWith(
       {},
       'test-project',
@@ -97,15 +115,16 @@ describe('setupUser for existing user', () => {
       throw new ProjectIdRequiredError();
     });
 
-    await expect(setupUser({} as OAuth2Client)).rejects.toThrow(
-      ProjectIdRequiredError,
-    );
+    await expect(
+      setupUser({} as OAuth2Client, mockConfig, mockAuthType),
+    ).rejects.toThrow(ProjectIdRequiredError);
   });
 });
 
 describe('setupUser for new user', () => {
   let mockLoad: ReturnType<typeof vi.fn>;
   let mockOnboardUser: ReturnType<typeof vi.fn>;
+  let mockLoadSettings: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -125,6 +144,10 @@ describe('setupUser for new user', () => {
           onboardUser: mockOnboardUser,
         }) as unknown as CodeAssistServer,
     );
+    mockLoadSettings = vi.fn().mockResolvedValue(null);
+    vi.mocked(CloudSettingsService.getInstance).mockReturnValue({
+      loadSettings: mockLoadSettings,
+    } as unknown as CloudSettingsService);
   });
 
   afterEach(() => {
@@ -136,7 +159,11 @@ describe('setupUser for new user', () => {
     mockLoad.mockResolvedValue({
       allowedTiers: [mockPaidTier],
     });
-    const userData = await setupUser({} as OAuth2Client);
+    const userData = await setupUser(
+      {} as OAuth2Client,
+      mockConfig,
+      mockAuthType,
+    );
     expect(CodeAssistServer).toHaveBeenCalledWith(
       {},
       'test-project',
@@ -166,7 +193,11 @@ describe('setupUser for new user', () => {
     mockLoad.mockResolvedValue({
       allowedTiers: [mockFreeTier],
     });
-    const userData = await setupUser({} as OAuth2Client);
+    const userData = await setupUser(
+      {} as OAuth2Client,
+      mockConfig,
+      mockAuthType,
+    );
     expect(CodeAssistServer).toHaveBeenCalledWith(
       {},
       undefined,
@@ -201,7 +232,11 @@ describe('setupUser for new user', () => {
         cloudaicompanionProject: undefined,
       },
     });
-    const userData = await setupUser({} as OAuth2Client);
+    const userData = await setupUser(
+      {} as OAuth2Client,
+      mockConfig,
+      mockAuthType,
+    );
     expect(userData).toEqual({
       projectId: 'test-project',
       userTier: 'standard-tier',
@@ -217,8 +252,8 @@ describe('setupUser for new user', () => {
       done: true,
       response: {},
     });
-    await expect(setupUser({} as OAuth2Client)).rejects.toThrow(
-      ProjectIdRequiredError,
-    );
+    await expect(
+      setupUser({} as OAuth2Client, mockConfig, mockAuthType),
+    ).rejects.toThrow(ProjectIdRequiredError);
   });
 });

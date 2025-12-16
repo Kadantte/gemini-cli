@@ -172,6 +172,7 @@ export enum SettingScope {
   // Note that this scope is not supported in the settings dialog at this time,
   // it is only supported for extensions.
   Session = 'Session',
+  Cloud = 'Cloud',
 }
 
 /**
@@ -428,6 +429,7 @@ function mergeSettings(
   systemDefaults: Settings,
   user: Settings,
   workspace: Settings,
+  cloud: Settings,
   isTrusted: boolean,
 ): Settings {
   const safeWorkspace = isTrusted ? workspace : ({} as Settings);
@@ -438,6 +440,7 @@ function mergeSettings(
   // 2. User Settings
   // 3. Workspace Settings
   // 4. System Settings (as overrides)
+  // 5. Cloud Settings (highest precedence)
   return customDeepMerge(
     getMergeStrategyForPath,
     {}, // Start with an empty object
@@ -445,6 +448,7 @@ function mergeSettings(
     user,
     safeWorkspace,
     system,
+    cloud,
   ) as Settings;
 }
 
@@ -461,6 +465,7 @@ export class LoadedSettings {
     this.systemDefaults = systemDefaults;
     this.user = user;
     this.workspace = workspace;
+    this.cloud = { settings: {}, originalSettings: {}, path: 'cloud' };
     this.isTrusted = isTrusted;
     this.migratedInMemoryScopes = migratedInMemoryScopes;
     this._merged = this.computeMergedSettings();
@@ -470,6 +475,7 @@ export class LoadedSettings {
   readonly systemDefaults: SettingsFile;
   readonly user: SettingsFile;
   readonly workspace: SettingsFile;
+  readonly cloud: SettingsFile;
   readonly isTrusted: boolean;
   readonly migratedInMemoryScopes: Set<SettingScope>;
 
@@ -485,8 +491,15 @@ export class LoadedSettings {
       this.systemDefaults.settings,
       this.user.settings,
       this.workspace.settings,
+      this.cloud.settings,
       this.isTrusted,
     );
+  }
+
+  setCloudSettings(settings: Settings): void {
+    this.cloud.settings = settings;
+    this.cloud.originalSettings = settings;
+    this._merged = this.computeMergedSettings();
   }
 
   forScope(scope: LoadableSettingScope): SettingsFile {
@@ -772,6 +785,7 @@ export function loadSettings(
     systemDefaultSettings,
     userSettings,
     workspaceSettings,
+    {}, // Cloud settings initially empty
     isTrusted,
   );
 

@@ -13,6 +13,9 @@ import type {
 import { UserTierId } from './types.js';
 import { CodeAssistServer } from './server.js';
 import type { AuthClient } from 'google-auth-library';
+import type { Config } from '../config/config.js';
+import type { AuthType } from '../core/contentGenerator.js';
+import { CloudSettingsService } from '../config/cloudSettingsService.js';
 
 export class ProjectIdRequiredError extends Error {
   constructor() {
@@ -32,11 +35,25 @@ export interface UserData {
  * @param projectId the user's project id, if any
  * @returns the user's actual project id
  */
-export async function setupUser(client: AuthClient): Promise<UserData> {
+export async function setupUser(
+  client: AuthClient,
+  config: Config,
+  authType: AuthType,
+): Promise<UserData> {
   const projectId =
     process.env['GOOGLE_CLOUD_PROJECT'] ||
     process.env['GOOGLE_CLOUD_PROJECT_ID'] ||
     undefined;
+
+  // Load Cloud Settings synchronously
+  const cloudSettings = await CloudSettingsService.getInstance().loadSettings(
+    config,
+    authType,
+  );
+  if (cloudSettings) {
+    config.cloudSettings = cloudSettings;
+  }
+
   const caServer = new CodeAssistServer(client, projectId, {}, '', undefined);
   const coreClientMetadata: ClientMetadata = {
     ideType: 'IDE_UNSPECIFIED',

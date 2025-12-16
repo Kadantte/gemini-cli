@@ -564,8 +564,11 @@ Logging in with Google... Restarting Gemini CLI to continue.
     // Only sync when not currently authenticating
     if (authState === AuthState.Authenticated) {
       setUserTier(config.getUserTier());
+      if (config.cloudSettings) {
+        settings.setCloudSettings(config.cloudSettings);
+      }
     }
-  }, [config, authState]);
+  }, [config, authState, settings]);
 
   // Check for enforced auth type mismatch
   useEffect(() => {
@@ -590,13 +593,14 @@ Logging in with Google... Restarting Gemini CLI to continue.
       }
 
       const error = validateAuthMethod(
-        settings.merged.security.auth.selectedType,
+        settings.merged.security!.auth!.selectedType!,
       );
       if (error) {
         onAuthError(error);
       }
     }
   }, [
+    settings.merged.security,
     settings.merged.security?.auth?.selectedType,
     settings.merged.security?.auth?.enforcedType,
     settings.merged.security?.auth?.useExternal,

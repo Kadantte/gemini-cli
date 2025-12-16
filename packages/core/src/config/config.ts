@@ -90,6 +90,7 @@ import { getExperiments } from '../code_assist/experiments/experiments.js';
 import { ExperimentFlags } from '../code_assist/experiments/flagNames.js';
 import { debugLogger } from '../utils/debugLogger.js';
 import { startupProfiler } from '../telemetry/startupProfiler.js';
+import type { CloudSettings } from './cloudSettingsService.js';
 
 import { ApprovalMode } from '../policy/types.js';
 
@@ -449,6 +450,7 @@ export class Config {
 
   private readonly experimentalJitContext: boolean;
   private contextManager?: ContextManager;
+  cloudSettings: CloudSettings | null = null;
 
   constructor(params: ConfigParameters) {
     this.sessionId = params.sessionId;
