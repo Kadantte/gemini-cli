@@ -97,6 +97,14 @@ export const useShellCommandProcessor = (
   // Used to force re-render when background shell output updates while visible
   const [, setTick] = useState(0);
 
+  const countRunningShells = useCallback(
+    () =>
+      Array.from(backgroundShellsRef.current.values()).filter(
+        (s) => s.status === 'running',
+      ).length,
+    [],
+  );
+
   const toggleBackgroundShell = useCallback(() => {
     if (backgroundShellsRef.current.size > 0) {
       setIsBackgroundShellVisible((prev) => !prev);
@@ -118,20 +126,23 @@ export const useShellCommandProcessor = (
     }
   }, [activeShellPtyId, activeToolPtyId]);
 
-  const dismissBackgroundShell = useCallback((pid: number) => {
-    const shell = backgroundShellsRef.current.get(pid);
-    if (shell) {
-      if (shell.status === 'running') {
-        ShellExecutionService.kill(pid);
+  const dismissBackgroundShell = useCallback(
+    (pid: number) => {
+      const shell = backgroundShellsRef.current.get(pid);
+      if (shell) {
+        if (shell.status === 'running') {
+          ShellExecutionService.kill(pid);
+        }
+        // Always remove from UI list when dismissed, whether running (killed) or exited
+        backgroundShellsRef.current.delete(pid);
+        setBackgroundShellCount(countRunningShells());
+        if (backgroundShellsRef.current.size === 0) {
+          setIsBackgroundShellVisible(false);
+        }
       }
-      // Always remove from UI list when dismissed, whether running (killed) or exited
-      backgroundShellsRef.current.delete(pid);
-      setBackgroundShellCount(backgroundShellsRef.current.size);
-      if (backgroundShellsRef.current.size === 0) {
-        setIsBackgroundShellVisible(false);
-      }
-    }
-  }, []);
+    },
+    [countRunningShells],
+  );
 
   const registerBackgroundShell = useCallback(
     (pid: number, command: string, initialOutput: string | AnsiOutput) => {
@@ -152,20 +163,18 @@ export const useShellCommandProcessor = (
       // Subscribe to process exit directly
       ShellExecutionService.onExit(pid, (code) => {
         if (backgroundShellsRef.current.has(pid)) {
-          if (code === 0) {
+          const shell = backgroundShellsRef.current.get(pid);
+          if (shell) {
+            // Remove and re-add to move to the end of the map (maintains insertion order)
             backgroundShellsRef.current.delete(pid);
-            setBackgroundShellCount(backgroundShellsRef.current.size);
-            if (backgroundShellsRef.current.size === 0) {
-              setIsBackgroundShellVisible(false);
-            }
-          } else {
-            const shell = backgroundShellsRef.current.get(pid);
-            if (shell) {
-              shell.status = 'exited';
-              shell.exitCode = code;
-            }
-            setTick((t) => t + 1);
+            backgroundShellsRef.current.set(pid, {
+              ...shell,
+              status: 'exited',
+              exitCode: code,
+            });
           }
+          setBackgroundShellCount(countRunningShells());
+          setTick((t) => t + 1);
         }
       });
 
@@ -185,9 +194,9 @@ export const useShellCommandProcessor = (
         setTick((t) => t + 1);
       });
 
-      setBackgroundShellCount(backgroundShellsRef.current.size);
+      setBackgroundShellCount(countRunningShells());
     },
-    [],
+    [countRunningShells],
   );
   const [lastShellOutputTime, setLastShellOutputTime] = useState<number>(0);
 
@@ -387,27 +396,18 @@ export const useShellCommandProcessor = (
                   binaryBytesReceived,
                   status: 'running',
                 });
-                setBackgroundShellCount(backgroundShellsRef.current.size);
+                setBackgroundShellCount(countRunningShells());
                 setActiveShellPtyId(null);
 
                 ShellExecutionService.onExit(result.pid, (code) => {
                   if (backgroundShellsRef.current.has(result.pid!)) {
-                    if (code === 0) {
-                      backgroundShellsRef.current.delete(result.pid!);
-                      setBackgroundShellCount(backgroundShellsRef.current.size);
-                      if (backgroundShellsRef.current.size === 0) {
-                        setIsBackgroundShellVisible(false);
-                      }
-                    } else {
-                      const shell = backgroundShellsRef.current.get(
-                        result.pid!,
-                      );
-                      if (shell) {
-                        shell.status = 'exited';
-                        shell.exitCode = code;
-                      }
-                      setTick((t) => t + 1);
+                    const shell = backgroundShellsRef.current.get(result.pid!);
+                    if (shell) {
+                      shell.status = 'exited';
+                      shell.exitCode = code;
                     }
+                    setBackgroundShellCount(countRunningShells());
+                    setTick((t) => t + 1);
                   }
                 });
               }
@@ -538,6 +538,7 @@ export const useShellCommandProcessor = (
       setShellInputFocused,
       terminalHeight,
       terminalWidth,
+      countRunningShells,
     ],
   );
 
