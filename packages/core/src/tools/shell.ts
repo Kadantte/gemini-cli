@@ -22,6 +22,7 @@ import {
   BaseToolInvocation,
   ToolConfirmationOutcome,
   Kind,
+  type PolicyUpdateOptions,
 } from './tools.js';
 import { ApprovalMode } from '../policy/types.js';
 
@@ -37,10 +38,12 @@ import type { AnsiOutput } from '../utils/terminalSerializer.js';
 import {
   getCommandRoots,
   initializeShellParsers,
-  isCommandAllowed,
-  isShellInvocationAllowlisted,
   stripShellWrapper,
 } from '../utils/shell-utils.js';
+import {
+  isCommandAllowed,
+  isShellInvocationAllowlisted,
+} from '../utils/shell-permissions.js';
 import { SHELL_TOOL_NAME } from './tool-names.js';
 import type { MessageBus } from '../confirmation-bus/message-bus.js';
 
@@ -88,6 +91,15 @@ export class ShellToolInvocation extends BaseToolInvocation<
     return description;
   }
 
+  protected override getPolicyUpdateOptions(
+    outcome: ToolConfirmationOutcome,
+  ): PolicyUpdateOptions | undefined {
+    if (outcome === ToolConfirmationOutcome.ProceedAlwaysAndSave) {
+      return { commandPrefix: this.params.command };
+    }
+    return undefined;
+  }
+
   protected override async getConfirmationDetails(
     _abortSignal: AbortSignal,
   ): Promise<ToolCallConfirmationDetails | false> {
@@ -129,6 +141,7 @@ export class ShellToolInvocation extends BaseToolInvocation<
         if (outcome === ToolConfirmationOutcome.ProceedAlways) {
           commandsToConfirm.forEach((command) => this.allowlist.add(command));
         }
+        await this.publishPolicyUpdate(outcome);
       },
     };
     return confirmationDetails;
@@ -307,7 +320,7 @@ export class ShellToolInvocation extends BaseToolInvocation<
           llmContent += ' There was no output before it was cancelled.';
         }
       } else if (this.params.is_background) {
-        llmContent = `Command moved to background (PID: ${result.pid}). Output is hidden from this conversation but continues in the background.`;
+        llmContent = `Command moved to background (PID: ${result.pid}). Output hidden. Press Ctrl+B to view.`;
         data = {
           pid: result.pid,
           command: this.params.command,

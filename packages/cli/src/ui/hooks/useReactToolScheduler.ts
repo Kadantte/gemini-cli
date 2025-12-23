@@ -101,7 +101,7 @@ export function useReactToolScheduler(
       setToolCallsForDisplay((prevCalls) =>
         prevCalls.map((tc) => {
           if (tc.request.callId === toolCallId && tc.status === 'executing') {
-            const executingTc = tc as TrackedExecutingToolCall;
+            const executingTc = tc;
             return { ...executingTc, liveOutput: outputChunk };
           }
           return tc;
@@ -329,10 +329,9 @@ export function mapToDisplay(
           return {
             ...baseDisplayProperties,
             status: mapCoreStatusToDisplayStatus(trackedCall.status),
-            resultDisplay:
-              (trackedCall as TrackedExecutingToolCall).liveOutput ?? undefined,
+            resultDisplay: trackedCall.liveOutput ?? undefined,
             confirmationDetails: undefined,
-            ptyId: (trackedCall as TrackedExecutingToolCall).pid,
+            ptyId: trackedCall.pid,
           };
         case 'validating': // Fallthrough
         case 'scheduled':

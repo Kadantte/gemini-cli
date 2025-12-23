@@ -41,6 +41,7 @@ export interface ProQuotaDialogRequest {
 import { type UseHistoryManagerReturn } from '../hooks/useHistoryManager.js';
 import { type RestartReason } from '../hooks/useIdeTrustListener.js';
 import type { BackgroundShell } from '../hooks/shellCommandProcessor.js';
+import type { TerminalBackgroundColor } from '../utils/terminalCapabilityManager.js';
 
 export interface UIState {
   history: HistoryItem[];
@@ -142,6 +143,7 @@ export interface UIState {
   activeBackgroundShellPid: number | null;
   backgroundShellHeight: number;
   isBackgroundShellListOpen: boolean;
+  terminalBackgroundColor: TerminalBackgroundColor;
 }
 
 export const UIStateContext = createContext<UIState | null>(null);
