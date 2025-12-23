@@ -176,4 +176,31 @@ description: Second
     expect(skills).toHaveLength(1);
     expect(skills[0].description).toBe('Second');
   });
+
+  it('should filter disabled skills in getSkills but not in getAllSkills', async () => {
+    const skill1Dir = path.join(testRootDir, 'skill1');
+    const skill2Dir = path.join(testRootDir, 'skill2');
+    await fs.mkdir(skill1Dir, { recursive: true });
+    await fs.mkdir(skill2Dir, { recursive: true });
+
+    await fs.writeFile(
+      path.join(skill1Dir, 'SKILL.md'),
+      '---\nname: skill1\ndescription: desc1\n---\n',
+    );
+    await fs.writeFile(
+      path.join(skill2Dir, 'SKILL.md'),
+      '---\nname: skill2\ndescription: desc2\n---\n',
+    );
+
+    const service = new SkillManager();
+    await service.discoverSkills([testRootDir]);
+    service.setDisabledSkills(['skill1']);
+
+    expect(service.getSkills()).toHaveLength(1);
+    expect(service.getSkills()[0].name).toBe('skill2');
+    expect(service.getAllSkills()).toHaveLength(2);
+    expect(
+      service.getAllSkills().find((s) => s.name === 'skill1')?.disabled,
+    ).toBe(true);
+  });
 });

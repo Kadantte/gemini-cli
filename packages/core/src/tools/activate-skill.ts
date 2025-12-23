@@ -152,10 +152,7 @@ export class ActivateSkillTool extends BaseDeclarativeTool<
     private config: Config,
     messageBus?: MessageBus,
   ) {
-    const skills = config
-      .getSkillManager()
-      .getSkills()
-      .filter((s) => !s.disabled);
+    const skills = config.getSkillManager().getSkills();
     const skillNames = skills.map((s) => s.name);
 
     let schema: z.ZodTypeAny;

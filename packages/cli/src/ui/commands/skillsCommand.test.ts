@@ -16,14 +16,16 @@ describe('skillsCommand', () => {
   let context: CommandContext;
 
   beforeEach(() => {
+    const skills = [
+      { name: 'skill1', description: 'desc1' },
+      { name: 'skill2', description: 'desc2' },
+    ];
     context = createMockCommandContext({
       services: {
         config: {
           getSkillManager: vi.fn().mockReturnValue({
-            getSkills: vi.fn().mockReturnValue([
-              { name: 'skill1', description: 'desc1' },
-              { name: 'skill2', description: 'desc2' },
-            ]),
+            getSkills: vi.fn().mockReturnValue(skills),
+            getAllSkills: vi.fn().mockReturnValue(skills),
           }),
         } as unknown as Config,
         settings: {

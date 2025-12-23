@@ -85,9 +85,16 @@ export class SkillManager {
   }
 
   /**
-   * Returns the list of discovered skills.
+   * Returns the list of enabled discovered skills.
    */
   getSkills(): SkillMetadata[] {
+    return this.skills.filter((s) => !s.disabled);
+  }
+
+  /**
+   * Returns all discovered skills, including disabled ones.
+   */
+  getAllSkills(): SkillMetadata[] {
     return this.skills;
   }
 
@@ -96,6 +103,15 @@ export class SkillManager {
    */
   filterSkills(predicate: (skill: SkillMetadata) => boolean): void {
     this.skills = this.skills.filter(predicate);
+  }
+
+  /**
+   * Sets the list of disabled skill names.
+   */
+  setDisabledSkills(disabledNames: string[]): void {
+    for (const skill of this.skills) {
+      skill.disabled = disabledNames.includes(skill.name);
+    }
   }
 
   /**

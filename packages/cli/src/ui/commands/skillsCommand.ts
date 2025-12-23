@@ -43,7 +43,7 @@ export const skillsCommand: SlashCommand = {
           return;
         }
 
-        const skills = skillManager.getSkills();
+        const skills = skillManager.getAllSkills();
 
         const skillsListItem: HistoryItemSkillsList = {
           type: MessageType.SKILLS_LIST,
@@ -73,10 +73,9 @@ export const skillsCommand: SlashCommand = {
           );
           return;
         }
-
         const skillManager = context.services.config?.getSkillManager();
         const skill = skillManager
-          ?.getSkills()
+          ?.getAllSkills()
           .find((s) => s.name === skillName);
         if (!skill) {
           context.ui.addItem(

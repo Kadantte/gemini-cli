@@ -730,23 +730,10 @@ export class Config {
     }
 
     await this.getSkillManager().discoverSkills(skillPaths);
-
-    // Mark disabled skills
-    if (this.disabledSkills.length > 0) {
-      this.getSkillManager().filterSkills((skill) => {
-        if (this.disabledSkills.includes(skill.name)) {
-          skill.disabled = true;
-        }
-        return true;
-      });
-    }
+    this.getSkillManager().setDisabledSkills(this.disabledSkills);
 
     // Re-register ActivateSkillTool to update its schema with the discovered enabled skill enums
-    const enabledSkills = this.getSkillManager()
-      .getSkills()
-      .filter((s) => !s.disabled);
-
-    if (enabledSkills.length > 0) {
+    if (this.getSkillManager().getSkills().length > 0) {
       this.getToolRegistry().registerTool(
         new ActivateSkillTool(this, this.messageBus),
       );
@@ -1717,10 +1704,7 @@ export class Config {
     registerCoreTool(WebFetchTool, this);
     registerCoreTool(ShellTool, this);
     registerCoreTool(MemoryTool);
-    const enabledSkillsCount = this.getSkillManager()
-      .getSkills()
-      .filter((s) => !s.disabled).length;
-    if (enabledSkillsCount > 0) {
+    if (this.getSkillManager().getSkills().length > 0) {
       registerCoreTool(ActivateSkillTool, this, this.messageBus);
     }
     registerCoreTool(WebSearchTool, this);
