@@ -774,7 +774,7 @@ export class ShellExecutionService {
                 this.exitedPtyInfo.delete(ptyProcess.pid);
               },
               5 * 60 * 1000,
-            );
+            ).unref();
 
             this.activePtys.delete(ptyProcess.pid);
             this.activeResolvers.delete(ptyProcess.pid);
@@ -967,6 +967,7 @@ export class ShellExecutionService {
     }
     this.activePtys.delete(pid);
     this.activeResolvers.delete(pid);
+    this.activeListeners.delete(pid);
   }
 
   /**

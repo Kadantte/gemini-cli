@@ -88,6 +88,18 @@ enum StreamProcessingStatus {
   Error,
 }
 
+function isShellToolData(data: unknown): data is ShellToolData {
+  if (typeof data !== 'object' || data === null) {
+    return false;
+  }
+  const d = data as Partial<ShellToolData>;
+  return (
+    (d.pid === undefined || typeof d.pid === 'number') &&
+    (d.command === undefined || typeof d.command === 'string') &&
+    (d.initialOutput === undefined || typeof d.initialOutput === 'string')
+  );
+}
+
 function showCitations(settings: LoadedSettings): boolean {
   const enabled = settings?.merged?.ui?.showCitations;
   if (enabled !== undefined) {
@@ -1166,7 +1178,8 @@ export const useGeminiStream = (
         const isShell = t.request.name === 'run_shell_command';
         // Access result from the tracked tool call response
         const response = t.response as ToolResponseWithParts;
-        const data = response?.data as unknown as ShellToolData;
+        const rawData = response?.data;
+        const data = isShellToolData(rawData) ? rawData : undefined;
 
         // Use data.pid or fallback to t.pid (preserved from executing state)
         const pid = data?.pid ?? (t as { pid?: number }).pid;
