@@ -12,7 +12,7 @@ import type {
 } from '../index.js';
 import {
   AuthType,
-  EditTool,
+  SmartEditTool,
   GeminiClient,
   ToolConfirmationOutcome,
   ToolErrorType,
@@ -1031,7 +1031,7 @@ describe('loggers', () => {
     });
 
     it('should log a tool call with all fields', () => {
-      const tool = new EditTool(mockConfig);
+      const tool = new SmartEditTool(mockConfig);
       const call: CompletedToolCall = {
         status: 'success',
         request: {
@@ -1247,7 +1247,7 @@ describe('loggers', () => {
           contentLength: 13,
         },
         outcome: ToolConfirmationOutcome.ModifyWithEditor,
-        tool: new EditTool(mockConfig),
+        tool: new SmartEditTool(mockConfig),
         invocation: {} as AnyToolInvocation,
         durationMs: 100,
       };
@@ -1326,7 +1326,7 @@ describe('loggers', () => {
           errorType: undefined,
           contentLength: 13,
         },
-        tool: new EditTool(mockConfig),
+        tool: new SmartEditTool(mockConfig),
         invocation: {} as AnyToolInvocation,
         durationMs: 100,
       };
